@@ -23,7 +23,7 @@ Building.action_parts = { "Foundation", "Floor", "Wall", "WallDoor", "WallWindow
 
 function Building.setup( )
 
-	Building.atual_model = CUSTOM_MODELS[ "Foundation" ].model;
+	Building.atual_model = MODELS_LIST[ "Foundation" ].model;
 
 	Building.preview_shader = dxCreateShader( "assets/shaders/color.fx" );
 	dxSetShaderValue( Building.preview_shader, "gColor", { 129 / 255, 222 / 255, 29 / 255, 1 } );
@@ -83,7 +83,7 @@ function Building.setup( )
 
 			if ( isElement( hit ) ) then
 
-				triggerServerEvent( "destroyele", localPlayer, hit );
+				triggerServerEvent( "building > destroy", localPlayer, hit );
 
 			end
 
@@ -145,7 +145,7 @@ end
 
 function Building.actionClick( part )
 
-	Building.atual_model = CUSTOM_MODELS[ Building.action_parts[ part ] ].model;
+	Building.atual_model = MODELS_LIST[ Building.action_parts[ part ] ].model;
 
 	if ( isElement( Building.preview_element ) ) then
 
@@ -240,7 +240,7 @@ function Building.updatePreview( )
 				if ( BUILDING_RULES[ Building.preview_element.model ][ process[ 5 ].model ] ) then
 
 					x, y, z, r = Building.getPosition( process[ 5 ], BUILDING_RULES[ Building.preview_element.model ][ process[ 5 ].model ], { x, y, z } );
-					z = z + ( ( process[ 5 ].model == CUSTOM_MODELS[ "Floor" ].model and Building.preview_element.model ~= CUSTOM_MODELS[ "Floor" ].model ) and ( BUILDING_SIZES[ process[ 5 ].model ].z / 2 ) or 0 );
+					z = z + ( ( process[ 5 ].model == MODELS_LIST[ "Floor" ].model and Building.preview_element.model ~= MODELS_LIST[ "Floor" ].model ) and ( BUILDING_SIZES[ process[ 5 ].model ].z / 2 ) or 0 );
 					r = process[ 5 ].rotation.z + r;
 
 					Building.raycast = process[ 5 ];
@@ -251,7 +251,7 @@ function Building.updatePreview( )
 
 		else
 
-			if ( Building.preview_element.model ~= CUSTOM_MODELS[ "Foundation" ].model ) then
+			if ( Building.preview_element.model ~= MODELS_LIST[ "Foundation" ].model ) then
 
 				Building.block_create = true;
 
@@ -390,7 +390,7 @@ end
 
 function Building.isWall( model )
 
-	for name, v in pairs( CUSTOM_MODELS ) do
+	for name, v in pairs( MODELS_LIST ) do
 
 		if ( find( name, "Wall" ) and v.model == model ) then
 
@@ -429,7 +429,7 @@ function Building.create( )
 
 		local name = "unnamed";
 
-		for k, v in pairs( CUSTOM_MODELS ) do
+		for k, v in pairs( MODELS_LIST ) do
 
 			if ( v.model == Building.preview_element:getModel( ) ) then
 
@@ -439,7 +439,7 @@ function Building.create( )
 
 		end
 
-		triggerServerEvent( "building > create", localPlayer, localPlayer, name, Building.preview_element:getModel( ), x, y, z, r );
+		triggerServerEvent( "building > create", localPlayer, localPlayer:getSerial( ), name, Building.preview_element:getModel( ), x, y, z, r );
 
 
 	end

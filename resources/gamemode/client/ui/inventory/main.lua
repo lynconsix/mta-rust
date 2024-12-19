@@ -344,7 +344,7 @@ function Inventory.click( b, s )
 
 								if ( Inventory.moving_item[ 1 ] == Inventory.UI.inventory and ( not Inventory.getItemUsedIn( "clothes", Inventory.item_on[ 2 ] ) ) ) then
 
-									if ( ITEMS[ Inventory.items[ Inventory.moving_item[ 2 ] ].item ].clothes and ITEMS[ Inventory.items[ Inventory.moving_item[ 2 ] ].item ].clothes[ 1 ] == Inventory.item_on[ 2 ] ) then
+									if ( ITEMS[ Inventory.items[ Inventory.moving_item[ 2 ] ].item ].clothes and ITEMS[ Inventory.items[ Inventory.moving_item[ 2 ] ].item ].clothes.slot_id == Inventory.item_on[ 2 ] ) then
 
 										if ( localPlayer:getData( "waiting_response" ) ) then return; else localPlayer:setData( "waiting_response", true ); end
 										triggerServerEvent( "inventory > set_usedin", localPlayer, localPlayer, "clothes", Inventory.moving_item[ 2 ], Inventory.item_on[ 2 ] );
@@ -390,7 +390,7 @@ function Inventory.click( b, s )
 									if ( tab ) then
 
 										if ( localPlayer:getData( "waiting_response" ) ) then return; else localPlayer:setData( "waiting_response", true ); end
-										triggerServerEvent( "inventory > remove_usedin", localPlayer, localPlayer, Inventory.moving_item[ 2 ] );
+										triggerServerEvent( "inventory > remove_usedin", localPlayer, localPlayer, Inventory.moving_item[ 2 ], tab );
 
 									end
 
@@ -582,8 +582,8 @@ function Inventory.loadItem( type, i, item, ammount, life, ammo )
 	Inventory.UI[ type ][ i ][ 2 ]:setImage( item and ( "assets/images/items/" .. item .. ".png" ) or "assets/images/null.png" );
 	Inventory.UI[ type ][ i ][ 3 ]:setText( ( ammount and ammount > 1 ) and ( "x" .. ammount ) or "" );
 	Inventory.UI[ type ][ i ][ 4 ]:setSize( 2, item and ( ITEMS[ item ].wear and ( -( ( life / 100 ) * INVENTORY_SLOTS.SIZE ) ) or 0 ) or 0 );
-	Inventory.UI[ type ][ i ][ 5 ]:setText( item and ( ITEMS[ item ].show_ammo and ammo or 0 ) or "" );
-	Inventory.UI[ type ][ i ][ 5 ]:setColor( ammo and ( ITEMS[ item ].show_ammo and ( ammo > 0 and { 255, 255, 255, 255 } or { 200, 200, 200, 255 } ) or { 0, 0, 0, 0 } ) or { 0, 0, 0, 0 } );
+	Inventory.UI[ type ][ i ][ 5 ]:setText( item and ( ( ITEMS[ item ].weapon and ITEMS[ item ].weapon.show_ammo ) and ammo or 0 ) or "" );
+	Inventory.UI[ type ][ i ][ 5 ]:setColor( ammo and ( ( ITEMS[ item ].weapon and ITEMS[ item ].weapon.show_ammo ) and ( ammo > 0 and { 255, 255, 255, 255 } or { 200, 200, 200, 255 } ) or { 0, 0, 0, 0 } ) or { 0, 0, 0, 0 } );
 
 end
 

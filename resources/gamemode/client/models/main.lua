@@ -1,27 +1,32 @@
 Models = { };
+Models.handlers = { 
+
+	txd = { handler = EngineTXD, method = "import" },
+	dff = { handler = EngineDFF, method = "replace" },
+	col = { handler = EngineCOL, method = "replace" }
+
+};
 
 function Models.replace( )
 
-	for _, v in pairs( CUSTOM_MODELS ) do
+	for _, v in pairs( REPLACE_MODELS ) do
 
-		if ( fileExists( v.txd ) ) then
+		for k, c in pairs( Models.handlers ) do
 
-			local txd = EngineTXD( v.txd );
-			txd:import( v.model );
+			if ( v[ k ] and fileExists( v[ k ] ) ) then
 
-		end
+				local instance = c.handler( v[ k ], v.filter );
+				if ( not instance ) then
 
-		if ( fileExists( v.dff ) ) then
+					print( "Failed to load model: " .. v[ k ] );
 
-			local dff = EngineDFF( v.dff );
-			dff:replace( v.model );
+				else
 
-		end
+					instance[ c.method ]( instance, v.model );
 
-		if ( fileExists( v.col ) ) then
+				end
 
-			local col = EngineCOL( v.col );
-			col:replace( v.model );
+			end
 
 		end
 

@@ -1,33 +1,43 @@
+local config_setting = {
+	[ "minclientversion" ] = "1.5.6",
+	[ "server_logic_fps_limit" ] = 0,
+	[ "busy_sleep_time" ] = 0,
+	[ "idle_sleep_time" ] = 0,
+	[ "player_sync_interval" ] = 200,
+	[ "lightweight_sync_interval" ] = 1500,
+	[ "ped_sync_interval" ] = 400,
+	[ "unoccupied_vehicle_sync_interval" ] = 1000,
+	[ "camera_sync_interval" ] = 500,
+	[ "keysync_mouse_sync_interval" ] = 100,
+	[ "keysync_analog_sync_interval" ] = 100,
+	[ "bullet_sync" ] = 0,
+	[ "donkey_work_interval" ] = 1000,
+	[ "vehext_percent" ] = 50,
+	[ "fpslimit" ] = 61,
+	[ "bandwidth_reduction" ] = "maximum"
+};
+
 addEventHandler( "onResourceStart", resourceRoot,
 	function( )
 
 		setMapName( "Los Santos" );
 		setGameType( "RUST" );
 
-		setServerConfigSetting( "minclientversion", "1.5.6", true );
-		setServerConfigSetting( "server_logic_fps_limit", 0, true );
-		setServerConfigSetting( "busy_sleep_time", 0, true );
-		setServerConfigSetting( "idle_sleep_time", 0, true );
-		setServerConfigSetting( "player_sync_interval", 200, true );
-		setServerConfigSetting( "lightweight_sync_interval", 1500, true );
-		setServerConfigSetting( "ped_sync_interval", 400, true );
-		setServerConfigSetting( "unoccupied_vehicle_sync_interval", 1000, true );
-		setServerConfigSetting( "camera_sync_interval", 500, true );
-		setServerConfigSetting( "keysync_mouse_sync_interval", 100, true );
-		setServerConfigSetting( "keysync_analog_sync_interval", 100, true );
-		setServerConfigSetting( "bullet_sync", 0, true );
-		setServerConfigSetting( "donkey_work_interval", 1000, true );
-		setServerConfigSetting( "vehext_percent", 50, true );
-		setServerConfigSetting( "fpslimit", 61, true );
-		setServerConfigSetting( "bandwidth_reduction", "maximum", true );
+		for setting, value in pairs( config_setting ) do
+
+			-- setServerConfigSetting( setting, value, true );
+
+		end
+
+		Database.setup( )
 
 		Loot.setup( );
-
-		Database.setup( );
 		Accounts.setup( );
 		Inventory.setup( );
 		Building.setup( );
 		Wasted.setup( );
+
+		Building.load( );
 
 	end
 );

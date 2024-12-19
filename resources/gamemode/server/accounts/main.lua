@@ -54,34 +54,49 @@ function Accounts.create( player )
 
 	);
 
+	exec( "INSERT INTO builds ( serial, build ) VALUES ( ?, ? )", 
+	
+		player.serial, 
+		toJSON( { } ) 
+
+	);
+
 	Accounts.load( player, {["serial"]=player.serial,["clothes"]=toJSON({{"player_torso","torso",0},{"player_face","head",1},{"player_legs","legs",2},{"foot","feet",3}}),["position"]=toJSON(SPAWN_POSITIONS[random_position]),["rotation"]=0,["life"]=100,["hunger"]=100,["thirst"]=100} );
 
 end
 
-function Accounts.load( player, query )
+function Accounts.load( player, query_account )
 
-	local pos = fromJSON( query[ "position" ] );
+	local pos = fromJSON( query_account[ "position" ] );
 
 	local x = pos[ 1 ];
 	local y = pos[ 2 ];
 	local z = pos[ 3 ];
 
-	local r = query[ "rotation" ];
+	local r = query_account[ "rotation" ];
 
 	player:spawn( x, y, z, r );
 
-	player:setData( "character > hunger", query[ "hunger" ] );
-	player:setData( "character > thirst", query[ "thirst" ] );
+	player:setData( "character > hunger", query_account[ "hunger" ] );
+	player:setData( "character > thirst", query_account[ "thirst" ] );
 	player:setData( "character > logged", true );
 	player:setData( "character > serial", player:getSerial( ) );
 
-	player:setHealth( query[ "life" ] );
+	player:setHealth( query_account[ "life" ] );
 
 	triggerClientEvent( player, "login > on_log", player );
 
-	for _, v in ipairs( fromJSON( query[ "clothes" ] ) ) do
+	for _, v in ipairs( fromJSON( query_account[ "clothes" ] ) ) do
 
 		player:addClothes( unpack( v ) );
+
+	end
+
+	local query_builds = query( "SELECT * FROM builds WHERE serial = ?", player.serial );
+
+	if ( maxn( query_builds ) == 0 ) then
+
+		exec( "INSERT INTO builds ( serial, build ) VALUES ( ?, ? )", player.serial, toJSON( { } ) );
 
 	end
 
@@ -129,11 +144,17 @@ function Accounts.save( player )
 
 end
 
-function Accounts.logout( player )
+function Accounts.logout( player, reason )
 
 	if ( not player:getData( "character > logged" ) ) then
 
 		return;
+
+	end
+
+	if ( not reason ) then
+
+		reason = "You have been disconnected from the server.";
 
 	end
 
@@ -150,10 +171,16 @@ function Accounts.logout( player )
 
 		if ( isElement( v ) ) then
 
-			exports[ "bone_attach" ]:detachElementFromBone( v );
+			exports[ "pAttach" ]:detach( v );
 			destroyElement( v );
 
 		end
+
+	end
+
+	if ( reason ) then
+
+		outputDebugString( "Player " .. player.name .. ", reason: " .. reason );
 
 	end
 

@@ -15,7 +15,7 @@ Inventory.players = { };
 
 function Inventory.setup( )
 
-	exec( "CREATE TABLE IF NOT EXISTS items ( serial TEXT, items TEXT )" );
+	exec( "CREATE TABLE IF NOT EXISTS items ( serial TEXT, items LONGTEXT )" );
 
 	addEventHandler( "inventory > trade_slot", root, Inventory.tradeSlot );
 	addEventHandler( "inventory > trade_usedin", root, Inventory.tradeUsedIn );
@@ -47,16 +47,7 @@ function Inventory.load( player )
 
 	for k, v in pairs( Inventory.players[ player ].items ) do
 
-		if ( ITEMS[ v.item ].preview_object ) then
-
-			if ( not isElement( Inventory.players[ player ].preview_objects[ ITEMS[ v.item ].preview_object.model ] ) ) then
-
-				Inventory.players[ player ].preview_objects[ ITEMS[ v.item ].preview_object.model ] = createObject( ITEMS[ v.item ].preview_object.model, 0, 0, 0 );
-				exports[ "bone_attach" ]:attachElementToBone( Inventory.players[ player ].preview_objects[ ITEMS[ v.item ].preview_object.model ], player, ITEMS[ v.item ].preview_object.bone, ITEMS[ v.item ].preview_object.pos[ 1 ], ITEMS[ v.item ].preview_object.pos[ 2 ], ITEMS[ v.item ].preview_object.pos[ 3 ], ITEMS[ v.item ].preview_object.r[ 1 ], ITEMS[ v.item ].preview_object.r[ 2 ], ITEMS[ v.item ].preview_object.r[ 3 ] );
-
-			end
-
-		end
+		Inventory.attachItem( player, k );
 
 	end
 
@@ -78,7 +69,7 @@ function Inventory.reset( player )
 
 		if ( isElement( v ) ) then
 
-			exports[ "bone_attach" ]:detachElementFromBone( v );
+			exports[ "pAttach" ]:detach( v );
 			destroyElement( v );
 
 		end
@@ -117,6 +108,56 @@ function Inventory.save( player )
 
 end
 
+function Inventory.updateItem( player, i, item, old_usedin )
+
+	if ( ( not Inventory.players[ player ] ) or ( not Inventory.players[ player ].items ) ) then
+
+		return;
+
+	end
+
+	triggerClientEvent( player, "inventory > update_item", player, i, item, old_usedin );
+
+end
+
+function Inventory.attachItem( player, i )
+
+	local item = Inventory.findItemFromSlot( player, i );
+	if ( not item ) then
+
+		return;
+
+	end
+
+	item = item.item
+
+	local preview_object = ITEMS[ item ].preview_object;
+
+	if ( preview_object ) then
+
+		local model_id = Inventory.getPreviewModelId( player, item );
+
+		if ( not isElement( Inventory.players[ player ].preview_objects[ model_id ] ) ) then
+
+			Inventory.players[ player ].preview_objects[ model_id ] = createObject( 355, 0, 0, 0 );
+			exports[ "pAttach" ]:attach( Inventory.players[ player ].preview_objects[ model_id ], player, preview_object.bone, preview_object.pos[ 1 ], preview_object.pos[ 2 ], preview_object.pos[ 3 ], preview_object.r[ 1 ], preview_object.r[ 2 ], preview_object.r[ 3 ] );
+
+		end
+
+		if ( preview_object.custom_id ) then
+
+			setElementData( Inventory.players[ player ].preview_objects[ model_id ], "engine > custom_id", model_id );
+
+		else
+
+			setElementModel( Inventory.players[ player ].preview_objects[ model_id ], preview_object.model );
+
+		end
+
+	end
+
+end
+
 function Inventory.giveItem( player, item, ammount, life, slot, dont_show_notification )
 
 	if ( ( not Inventory.players[ player ] ) or ( not Inventory.players[ player ].items ) ) then
@@ -124,6 +165,9 @@ function Inventory.giveItem( player, item, ammount, life, slot, dont_show_notifi
 		return player:removeData( "waiting_response" );
 
 	end
+
+	ammount = ammount or 1
+	life = life or 100
 
 	local stackable = ITEMS[ item ].stackable;
 	local free_sloot = Inventory.getFreeSlot( player );
@@ -136,7 +180,7 @@ function Inventory.giveItem( player, item, ammount, life, slot, dont_show_notifi
 
 				item 		= item,
 				ammount 	= ammount,
-				life 		= life or 100,
+				life 		= life,
 				used_in 	= false,
 				ammo 		= 0,
 				active 		= false
@@ -148,13 +192,13 @@ function Inventory.giveItem( player, item, ammount, life, slot, dont_show_notifi
 				if ( not isElement( Inventory.players[ player ].preview_objects[ ITEMS[ item ].preview_object.model ] ) ) then
 
 					Inventory.players[ player ].preview_objects[ ITEMS[ item ].preview_object.model ] = createObject( ITEMS[ item ].preview_object.model, 0, 0, 0 );
-					exports[ "bone_attach" ]:attachElementToBone( Inventory.players[ player ].preview_objects[ ITEMS[ item ].preview_object.model ], player, ITEMS[ item ].preview_object.bone, ITEMS[ item ].preview_object.pos[ 1 ], ITEMS[ item ].preview_object.pos[ 2 ], ITEMS[ item ].preview_object.pos[ 3 ], ITEMS[ item ].preview_object.r[ 1 ], ITEMS[ item ].preview_object.r[ 2 ], ITEMS[ item ].preview_object.r[ 3 ] );
+					exports[ "pAttach" ]:attach( Inventory.players[ player ].preview_objects[ ITEMS[ item ].preview_object.model ], player, ITEMS[ item ].preview_object.bone, ITEMS[ item ].preview_object.pos[ 1 ], ITEMS[ item ].preview_object.pos[ 2 ], ITEMS[ item ].preview_object.pos[ 3 ], ITEMS[ item ].preview_object.r[ 1 ], ITEMS[ item ].preview_object.r[ 2 ], ITEMS[ item ].preview_object.r[ 3 ] );
 
 				end
 
 			end
 
-			triggerClientEvent( player, "inventory > update_item", player, slot, Inventory.players[ player ].items[ slot ] );
+			Inventory.updateItem( player, slot, Inventory.players[ player ].items[ slot ] );
 
 			if ( not dont_show_notification ) then
 
@@ -171,13 +215,13 @@ function Inventory.giveItem( player, item, ammount, life, slot, dont_show_notifi
 
 				Inventory.players[ player ].items[ find_item ].ammount = Inventory.players[ player ].items[ find_item ].ammount + ammount;
 
-				triggerClientEvent( player, "inventory > update_item", player, find_item, Inventory.players[ player ].items[ find_item ] );
-
 				if ( not dont_show_notification ) then
 
 					createNotification( player, ITEMS[ item ].name .. " +" .. ammount, 1 );
 
 				end
+
+				Inventory.updateItem( player, find_item, Inventory.players[ player ].items[ find_item ] );
 
 				return true;
 
@@ -189,7 +233,7 @@ function Inventory.giveItem( player, item, ammount, life, slot, dont_show_notifi
 
 						item 		= item,
 						ammount 	= ammount,
-						life 		= life or 100,
+						life 		= life,
 						used_in 	= false,
 						ammo 		= 0,
 						active 		= false
@@ -201,13 +245,13 @@ function Inventory.giveItem( player, item, ammount, life, slot, dont_show_notifi
 						if ( not isElement( Inventory.players[ player ].preview_objects[ ITEMS[ item ].preview_object.model ] ) ) then
 
 							Inventory.players[ player ].preview_objects[ ITEMS[ item ].preview_object.model ] = createObject( ITEMS[ item ].preview_object.model, 0, 0, 0 );
-							exports[ "bone_attach" ]:attachElementToBone( Inventory.players[ player ].preview_objects[ ITEMS[ item ].preview_object.model ], player, ITEMS[ item ].preview_object.bone, ITEMS[ item ].preview_object.pos[ 1 ], ITEMS[ item ].preview_object.pos[ 2 ], ITEMS[ item ].preview_object.pos[ 3 ], ITEMS[ item ].preview_object.r[ 1 ], ITEMS[ item ].preview_object.r[ 2 ], ITEMS[ item ].preview_object.r[ 3 ] );
+							exports[ "pAttach" ]:attach( Inventory.players[ player ].preview_objects[ ITEMS[ item ].preview_object.model ], player, ITEMS[ item ].preview_object.bone, ITEMS[ item ].preview_object.pos[ 1 ], ITEMS[ item ].preview_object.pos[ 2 ], ITEMS[ item ].preview_object.pos[ 3 ], ITEMS[ item ].preview_object.r[ 1 ], ITEMS[ item ].preview_object.r[ 2 ], ITEMS[ item ].preview_object.r[ 3 ] );
 
 						end
 
 					end
 
-					triggerClientEvent( player, "inventory > update_item", player, free_sloot, Inventory.players[ player ].items[ free_sloot ] );
+					Inventory.updateItem( player, free_sloot, Inventory.players[ player ].items[ free_sloot ] );
 
 					if ( not dont_show_notification ) then
 
@@ -231,7 +275,7 @@ function Inventory.giveItem( player, item, ammount, life, slot, dont_show_notifi
 
 				item 		= item,
 				ammount 	= ammount,
-				life 		= life or 100,
+				life 		= life,
 				used_in 	= false,
 				ammo 		= 0,
 				active 		= false
@@ -243,13 +287,13 @@ function Inventory.giveItem( player, item, ammount, life, slot, dont_show_notifi
 				if ( not isElement( Inventory.players[ player ].preview_objects[ ITEMS[ item ].preview_object.model ] ) ) then
 
 					Inventory.players[ player ].preview_objects[ ITEMS[ item ].preview_object.model ] = createObject( ITEMS[ item ].preview_object.model, 0, 0, 0 );
-					exports[ "bone_attach" ]:attachElementToBone( Inventory.players[ player ].preview_objects[ ITEMS[ item ].preview_object.model ], player, ITEMS[ item ].preview_object.bone, ITEMS[ item ].preview_object.pos[ 1 ], ITEMS[ item ].preview_object.pos[ 2 ], ITEMS[ item ].preview_object.pos[ 3 ], ITEMS[ item ].preview_object.r[ 1 ], ITEMS[ item ].preview_object.r[ 2 ], ITEMS[ item ].preview_object.r[ 3 ] );
+					exports[ "pAttach" ]:attach( Inventory.players[ player ].preview_objects[ ITEMS[ item ].preview_object.model ], player, ITEMS[ item ].preview_object.bone, ITEMS[ item ].preview_object.pos[ 1 ], ITEMS[ item ].preview_object.pos[ 2 ], ITEMS[ item ].preview_object.pos[ 3 ], ITEMS[ item ].preview_object.r[ 1 ], ITEMS[ item ].preview_object.r[ 2 ], ITEMS[ item ].preview_object.r[ 3 ] );
 
 				end
 
 			end
 
-			triggerClientEvent( player, "inventory > update_item", player, slot, Inventory.players[ player ].items[ slot ] );
+			Inventory.updateItem( player, slot, Inventory.players[ player ].items[ slot ] );
 
 			if ( not dont_show_notification ) then
 
@@ -265,7 +309,7 @@ function Inventory.giveItem( player, item, ammount, life, slot, dont_show_notifi
 
 				item 		= item,
 				ammount 	= ammount,
-				life 		= life or 100,
+				life 		= life,
 				used_in 	= false,
 				ammo 		= 0,
 				active 		= false
@@ -277,13 +321,13 @@ function Inventory.giveItem( player, item, ammount, life, slot, dont_show_notifi
 				if ( not isElement( Inventory.players[ player ].preview_objects[ ITEMS[ item ].preview_object.model ] ) ) then
 
 					Inventory.players[ player ].preview_objects[ ITEMS[ item ].preview_object.model ] = createObject( ITEMS[ item ].preview_object.model, 0, 0, 0 );
-					exports[ "bone_attach" ]:attachElementToBone( Inventory.players[ player ].preview_objects[ ITEMS[ item ].preview_object.model ], player, ITEMS[ item ].preview_object.bone, ITEMS[ item ].preview_object.pos[ 1 ], ITEMS[ item ].preview_object.pos[ 2 ], ITEMS[ item ].preview_object.pos[ 3 ], ITEMS[ item ].preview_object.r[ 1 ], ITEMS[ item ].preview_object.r[ 2 ], ITEMS[ item ].preview_object.r[ 3 ] );
+					exports[ "pAttach" ]:attach( Inventory.players[ player ].preview_objects[ ITEMS[ item ].preview_object.model ], player, ITEMS[ item ].preview_object.bone, ITEMS[ item ].preview_object.pos[ 1 ], ITEMS[ item ].preview_object.pos[ 2 ], ITEMS[ item ].preview_object.pos[ 3 ], ITEMS[ item ].preview_object.r[ 1 ], ITEMS[ item ].preview_object.r[ 2 ], ITEMS[ item ].preview_object.r[ 3 ] );
 
 				end
 
 			end
 
-			triggerClientEvent( player, "inventory > update_item", player, free_sloot, Inventory.players[ player ].items[ free_sloot ] );
+			Inventory.updateItem( player, free_sloot, Inventory.players[ player ].items[ free_sloot ] );
 
 			if ( not dont_show_notification ) then
 
@@ -312,7 +356,7 @@ function Inventory.updateAmmount( player, i, ammount )
 	if ( ammount > 0 ) then
 
 		Inventory.players[ player ].items[ i ].ammount = ammount;
-		triggerClientEvent( player, "inventory > update_item", player, i, Inventory.players[ player ].items[ i ] );
+		Inventory.updateItem( player, i, Inventory.players[ player ].items[ i ] );
 
 	else
 
@@ -335,7 +379,7 @@ function Inventory.updateLife( player, i, life )
 	if ( life > 0 ) then
 
 		Inventory.players[ player ].items[ i ].life = life;
-		triggerClientEvent( player, "inventory > update_item", player, i, Inventory.players[ player ].items[ i ] );
+		Inventory.updateItem( player, i, Inventory.players[ player ].items[ i ] );
 
 	else
 
@@ -358,7 +402,7 @@ function Inventory.updateAmmo( player, i, ammo )
 	if ( ammo >= 0 ) then
 
 		Inventory.players[ player ].items[ i ].ammo = ammo;
-		triggerClientEvent( player, "inventory > update_item", player, i, Inventory.players[ player ].items[ i ] );
+		Inventory.updateItem( player, i, Inventory.players[ player ].items[ i ] );
 
 	end
 
@@ -388,7 +432,7 @@ function Inventory.takeItem( player, i )
 
 		if ( isElement( Inventory.players[ player ].preview_objects[ ITEMS[ item ].preview_object.model ] ) and Inventory.isSinglePreviewModel( player, item ) ) then
 
-			exports[ "bone_attach" ]:detachElementFromBone( Inventory.players[ player ].preview_objects[ ITEMS[ item ].preview_object.model ] );
+			exports[ "pAttach" ]:detach( Inventory.players[ player ].preview_objects[ ITEMS[ item ].preview_object.model ] );
 			destroyElement( Inventory.players[ player ].preview_objects[ ITEMS[ item ].preview_object.model ] );
 
 		end
@@ -396,7 +440,7 @@ function Inventory.takeItem( player, i )
 	end
 
 	Inventory.players[ player ].items[ i ] = nil;
-	triggerClientEvent( player, "inventory > update_item", player, i, false );
+	Inventory.updateItem( player, i, false );
 
 	player:removeData( "waiting_response" );
 
@@ -428,8 +472,8 @@ function Inventory.tradeSlot( player, moving, on )
 
 	local backup = { Inventory.players[ player ].items[ on ], Inventory.players[ player ].items[ moving ] };
 	Inventory.players[ player ].items[ moving ], Inventory.players[ player ].items[ on ] = backup[ 1 ], backup[ 2 ];
-	triggerClientEvent( player, "inventory > update_item", player, moving, Inventory.players[ player ].items[ moving ] );
-	triggerClientEvent( player, "inventory > update_item", player, on, Inventory.players[ player ].items[ on ] );
+	Inventory.updateItem( player, moving, Inventory.players[ player ].items[ moving ] );
+	Inventory.updateItem( player, on, Inventory.players[ player ].items[ on ] );
 
 	player:removeData( "waiting_response" );
 
@@ -447,18 +491,59 @@ function Inventory.tradeUsedIn( player, moving, on, type, s )
 
 		local backup = { Inventory.players[ player ].items[ on ].used_in, Inventory.players[ player ].items[ moving ].used_in };
 		Inventory.players[ player ].items[ moving ].used_in, Inventory.players[ player ].items[ on ].used_in = backup[ 1 ], backup[ 2 ];
-		triggerClientEvent( player, "inventory > update_item", player, on, Inventory.players[ player ].items[ on ] );
-		triggerClientEvent( player, "inventory > update_item", player, moving, Inventory.players[ player ].items[ moving ] );
+		Inventory.updateItem( player, on, Inventory.players[ player ].items[ on ] );
+		Inventory.updateItem( player, moving, Inventory.players[ player ].items[ moving ] );
 
 	else
 
 		local backup = Inventory.players[ player ].items[ moving ].used_in;
 		Inventory.players[ player ].items[ moving ].used_in = { type, s };
-		triggerClientEvent( player, "inventory > update_item", player, moving, Inventory.players[ player ].items[ moving ], backup );
+		Inventory.updateItem( player, moving, Inventory.players[ player ].items[ moving ], backup );
 
 	end
 
 	player:removeData( "waiting_response" );
+
+end
+
+function Inventory.usedInResponse( player, ready, i, usein )
+
+	local item = Inventory.findItemFromSlot( player, i );
+	if ( not item ) then
+
+		return;
+
+	end
+
+	if ( ready == "use" ) then
+
+		if ( usein == "clothes" ) then
+
+			local clothe = ITEMS[ item.item ].clothes;
+			if ( clothe.clothe ) then
+
+				clothe = clothe.clothe;
+				player:addClothes( unpack( clothe ) );
+
+			end
+
+		end
+
+	elseif ( ready == "remove" ) then
+
+		if ( usein == "clothes" ) then
+
+			local clothe = ITEMS[ item.item ].clothes;
+			if ( clothe.clothe ) then
+
+				clothe = clothe.clothe;
+				player:removeClothes( clothe[ 3 ], clothe[ 1 ], clothe[ 2 ] );
+
+			end
+
+		end
+
+	end
 
 end
 
@@ -472,13 +557,15 @@ function Inventory.setUsedIn( player, usein, moving, on )
 
 	local backup = Inventory.players[ player ].items[ moving ].used_in;
 	Inventory.players[ player ].items[ moving ].used_in = { usein, on };
-	triggerClientEvent( player, "inventory > update_item", player, moving, Inventory.players[ player ].items[ moving ], backup );
+
+	Inventory.updateItem( player, moving, Inventory.players[ player ].items[ moving ], backup );
+	Inventory.usedInResponse( player, "use", moving, usein );
 
 	player:removeData( "waiting_response" );
 
 end
 
-function Inventory.removeUsedIn( player, i )
+function Inventory.removeUsedIn( player, i, usein )
 
 	if ( ( not Inventory.players[ player ] ) or ( not Inventory.players[ player ].items ) ) then
 
@@ -488,8 +575,10 @@ function Inventory.removeUsedIn( player, i )
 
 	local backup = Inventory.players[ player ].items[ i ].used_in;
 	Inventory.players[ player ].items[ i ].used_in = false;
-	triggerClientEvent( player, "inventory > update_item", player, i, Inventory.players[ player ].items[ i ], backup );
-	
+
+	Inventory.updateItem( player, i, Inventory.players[ player ].items[ i ], backup );
+	Inventory.usedInResponse( player, "remove", i, usein );
+
 	player:removeData( "waiting_response" );
 
 end
@@ -513,6 +602,48 @@ function Inventory.getFreeSlot( player )
 	end
 
 	return;
+
+end
+
+function Inventory.getPreviewModelId( player, item )
+
+	if ( ( not Inventory.players[ player ] ) or ( not Inventory.players[ player ].items ) ) then
+
+		return;
+
+	end
+
+	local preview_object = ITEMS[ item ].preview_object;
+	if ( preview_object ) then
+
+		local model = preview_object.model
+
+		if ( preview_object.custom_id ) then
+
+			model = preview_object.custom_id;
+		end
+
+		return model;
+
+	end
+
+end
+	
+function Inventory.findItemFromSlot( player, slot )
+
+	if ( ( not Inventory.players[ player ] ) or ( not Inventory.players[ player ].items ) ) then
+
+		return;
+
+	end
+
+	if ( Inventory.players[ player ].items[ slot ] ) then
+
+		return Inventory.players[ player ].items[ slot ];
+
+	end
+
+	return false;
 
 end
 
@@ -564,14 +695,6 @@ function Inventory.isSinglePreviewModel( player, item )
 
 end
 
-addCommandHandler( "giveItem",
-	function( player, cmd, id, ammount )
-		
-		Inventory.giveItem( player, tonumber( id ), tonumber( ammount ), 100 );
-
-	end
-);
-
 function Inventory.debugTable( debuggingtable )
 
 	local returntable = { };
@@ -590,3 +713,11 @@ function Inventory.debugTable( debuggingtable )
 	return returntable;
 
 end
+
+addCommandHandler( "i",
+	function( player, cmd, id, ammount )
+
+		Inventory.giveItem( player, tonumber( id ), tonumber( ammount ), 100 );
+
+	end
+);

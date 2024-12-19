@@ -1,6 +1,8 @@
 addEventHandler( "onResourceStop", resourceRoot,
 	function( )
 
+		Building.save( );
+
 		for _, v in ipairs( getElementsByType( "player" ) ) do
 
 			Accounts.logout( v );

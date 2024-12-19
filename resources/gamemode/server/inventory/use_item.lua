@@ -40,7 +40,7 @@ Inventory.items_functions[ 14 ] = function( player, item )
 		end
 
 		player:setData( "character > tool", item );
-		giveWeapon( player, ITEMS[ item ].mta_id, 100, true );
+		giveWeapon( player, ITEMS[ item ].weapon.mta_id, 100, true );
 
 	else
 
@@ -68,21 +68,22 @@ function Inventory.useItem( player, slot )
 	if ( item ) then
 
 		item = item.item;
+		local item_weapon_data = ITEMS[ item ].weapon
 
-		if ( ITEMS[ item ].weapon ) then
+		if ( item_weapon_data ) then
 
 			if ( not player:getData( "character > weapon" ) ) then
 
 				if ( Inventory.players[ player ].items[ slot ].ammo <= 0 ) then
 
-					local ammo = Inventory.getAmmo( player, ITEMS[ item ].ammo_id );
+					local ammo = Inventory.getAmmo( player, item_weapon_data.ammo_id );
 
 					if ( ammo ) then
 
-						if ( Inventory.players[ player ].items[ ammo ].ammount > ITEMS[ item ].max_ammo ) then
+						if ( Inventory.players[ player ].items[ ammo ].ammount > item_weapon_data.max_ammo ) then
 
-							Inventory.updateAmmo( player, slot, ITEMS[ item ].max_ammo );
-							Inventory.updateAmmount( player, ammo, Inventory.players[ player ].items[ ammo ].ammount - ITEMS[ item ].max_ammo );
+							Inventory.updateAmmo( player, slot, item_weapon_data.max_ammo );
+							Inventory.updateAmmount( player, ammo, Inventory.players[ player ].items[ ammo ].ammount - item_weapon_data.max_ammo );
 
 						else
 
@@ -142,20 +143,16 @@ function Inventory.useItem( player, slot )
 		elseif ( ITEMS[ item ].food ) then
 
 			local used = false;
+			local attributes = { [ "hunger" ] = ITEMS[ item ].hunger, [ "thirst" ] = ITEMS[ item ].thirst };
 
-			local hunger = ITEMS[ item ].hunger;
-			if ( player:getData( "character > hunger" ) < 100 and player:getData( "character > hunger" ) >= 0 ) then
+			for k, v in pairs( attributes ) do
 
-				player:setData( "character > hunger", max( min( player:getData( "character > hunger" ) + hunger, 100 ), 0 ) );
-				used = true;
+				if ( player:getData( "character > " .. k ) < 100 and player:getData( "character > " .. k ) >= 0 ) then
 
-			end
+					player:setData( "character > " .. k, max( min( player:getData( "character > " .. k ) + v, 100 ), 0 ) );
+					used = true;
 
-			local thirst = ITEMS[ item ].thirst;
-			if ( player:getData( "character > thirst" ) < 100 and player:getData( "character > thirst" ) >= 0 ) then
-
-				player:setData( "character > thirst", max( min( player:getData( "character > thirst" ) + thirst, 100 ), 0 ) );
-				used = true;
+				end
 
 			end
 
@@ -179,16 +176,85 @@ function Inventory.useItem( player, slot )
 
 end
 
+function Inventory.weaponUpdateAttach( player, item, attached )
+
+	local item_weapon = ITEMS[ item ].weapon;
+	if ( not item_weapon ) then 
+
+		return;
+
+	end
+
+	local model_id = Inventory.getPreviewModelId( player, item );
+	local preview_element = Inventory.players[ player ].preview_objects[ model_id ];
+
+	if ( preview_element and isElement( preview_element ) ) then
+
+		local preview_object = ITEMS[ item ].preview_object;
+		if ( attached ) then
+	
+			if ( item_weapon.custom_id ) then
+	
+				if ( not isElementVisibleTo( preview_element, root ) ) then
+	
+					setElementVisibleTo( preview_element, root, true );
+	
+				end
+	
+				exports[ "pAttach" ]:setDetails( preview_element, player, "weapon", 0, 0, 0, 0, 0, 0 );
+	
+			else
+	
+				if ( isElementVisibleTo( preview_element, root ) ) then
+	
+					setElementVisibleTo( preview_element, root, false );
+	
+				end
+	
+				exports[ "pAttach" ]:detach( preview_element );
+				setElementPosition( preview_element, 0, 0, -50 );
+	
+			end
+	
+		else
+	
+			if ( item_weapon.custom_id ) then
+	
+				exports[ "pAttach" ]:setDetails( preview_element, player, preview_object.bone, preview_object.pos[ 1 ], preview_object.pos[ 2 ], preview_object.pos[ 3 ], preview_object.r[ 1 ], preview_object.r[ 2 ], preview_object.r[ 3 ] );
+	
+			else
+	
+				exports[ "pAttach" ]:attach( preview_element, player, preview_object.bone, preview_object.pos[ 1 ], preview_object.pos[ 2 ], preview_object.pos[ 3 ], preview_object.r[ 1 ], preview_object.r[ 2 ], preview_object.r[ 3 ] );
+	
+			end
+	
+		end
+	
+		if ( item_weapon.custom_id ) then
+	
+			setElementData( preview_element, "engine > custom_id", model_id );
+	
+		else
+	
+			setElementModel( preview_element, model_id );
+	
+		end
+
+	end
+
+	return item_weapon;
+
+end
+
 function Inventory.equipWeapon( player, slot, item )
 
 	takeAllWeapons( player );
 
+	local item_weapon = Inventory.weaponUpdateAttach( player, item, true );
 	Inventory.players[ player ].items[ slot ].active = true;
-	giveWeapon( player, ITEMS[ item ].mta_id, 100, true );
-	player:setData( "character > weapon", slot );
 
-	exports[ "bone_attach" ]:detachElementFromBone( Inventory.players[ player ].preview_objects[ ITEMS[ item ].preview_object.model ] );
-	setElementPosition( Inventory.players[ player ].preview_objects[ ITEMS[ item ].preview_object.model ], 0, 0, -50 );
+	giveWeapon( player, item_weapon.mta_id, 100, true );
+	player:setData( "character > weapon", slot );
 
 	toggleControl( player, "fire", true );
 	toggleControl( player, "aim_weapon", true );
@@ -208,8 +274,7 @@ function Inventory.unequipWeapon( player, unattach )
 
 		if ( not unattach ) then
 
-			local item = Inventory.players[ player ].items[ slot ].item;
-			exports[ "bone_attach" ]:attachElementToBone( Inventory.players[ player ].preview_objects[ ITEMS[ item ].preview_object.model ], player, ITEMS[ item ].preview_object.bone, ITEMS[ item ].preview_object.pos[ 1 ], ITEMS[ item ].preview_object.pos[ 2 ], ITEMS[ item ].preview_object.pos[ 3 ], ITEMS[ item ].preview_object.r[ 1 ], ITEMS[ item ].preview_object.r[ 2 ], ITEMS[ item ].preview_object.r[ 3 ] );
+			Inventory.weaponUpdateAttach( player, Inventory.players[ player ].items[ slot ].item, false );
 
 		end
 
@@ -245,24 +310,24 @@ function Inventory.reloadWeapon( player, k )
 	end
 
 	local weapon_data = player:getData( "character > weapon" );
-
 	if ( weapon_data ) then
 
 		local item = Inventory.players[ player ].items[ weapon_data ];
-		if ( item and item.ammo < ITEMS[ item.item ].max_ammo ) then
+		local item_weapon_data = ITEMS[ item.item ].weapon;
+
+		if ( item and item.ammo < item_weapon_data.max_ammo ) then
 
 			item = item.item;
-
-			local ammo = Inventory.getAmmo( player, ITEMS[ item ].ammo_id );
+			local ammo = Inventory.getAmmo( player, item_weapon_data.ammo_id );
 
 			if ( ammo ) then
 
 				if ( Inventory.players[ player ].items[ weapon_data ].ammo > 0 ) then
 
-					if ( Inventory.players[ player ].items[ ammo ].ammount > ( ITEMS[ item ].max_ammo - Inventory.players[ player ].items[ weapon_data ].ammo ) ) then
+					if ( Inventory.players[ player ].items[ ammo ].ammount > ( item_weapon_data.max_ammo - Inventory.players[ player ].items[ weapon_data ].ammo ) ) then
 
-						Inventory.updateAmmount( player, ammo, Inventory.players[ player ].items[ ammo ].ammount - ( ITEMS[ item ].max_ammo - Inventory.players[ player ].items[ weapon_data ].ammo ) );
-						Inventory.updateAmmo( player, weapon_data, ITEMS[ item ].max_ammo );
+						Inventory.updateAmmount( player, ammo, Inventory.players[ player ].items[ ammo ].ammount - ( item_weapon_data.max_ammo - Inventory.players[ player ].items[ weapon_data ].ammo ) );
+						Inventory.updateAmmo( player, weapon_data, item_weapon_data.max_ammo );
 
 					else
 
@@ -273,10 +338,10 @@ function Inventory.reloadWeapon( player, k )
 
 				else
 
-					if ( Inventory.players[ player ].items[ ammo ].ammount > ITEMS[ item ].max_ammo ) then
+					if ( Inventory.players[ player ].items[ ammo ].ammount > item_weapon_data.max_ammo ) then
 
-						Inventory.updateAmmo( player, weapon_data, ITEMS[ item ].max_ammo );
-						Inventory.updateAmmount( player, ammo, Inventory.players[ player ].items[ ammo ].ammount - ITEMS[ item ].max_ammo );
+						Inventory.updateAmmo( player, weapon_data, item_weapon_data.max_ammo );
+						Inventory.updateAmmount( player, ammo, Inventory.players[ player ].items[ ammo ].ammount - item_weapon_data.max_ammo );
 
 					else
 
@@ -287,8 +352,8 @@ function Inventory.reloadWeapon( player, k )
 
 				end
 
-				setWeaponAmmo( player, ITEMS[ item ].mta_id, 100 );
-				setTimer( reloadPedWeapon, 1500, 1, player );
+				setWeaponAmmo( player, item_weapon_data.mta_id, 100 );
+				setTimer( reloadPedWeapon, 500, 1, player );
 
 			elseif ( Inventory.players[ player ].items[ weapon_data ].ammo == 0 ) then
 

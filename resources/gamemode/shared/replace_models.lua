@@ -1,4 +1,4 @@
-CUSTOM_MODELS = {
+REPLACE_MODELS = {
 
 	[ "Foundation" ] = {
 
@@ -97,6 +97,15 @@ CUSTOM_MODELS = {
 		col 	= "",
 		txd 	= "assets/models/utils/axe.txd"
 
+	}, 
+
+	[ "Ak-47" ] = { 
+
+		model 	= 355, 
+		dff 	= "assets/models/weapons/null.dff",
+
 	}
 
 };
+
+MODELS_LIST = REPLACE_MODELS;

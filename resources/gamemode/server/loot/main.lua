@@ -34,7 +34,7 @@ function Loot.setup( )
 
 			local col = Loot.loots_to_respawn[ 1 ].col;
 
-			local element = Object( find( type, "Barrel" ) and CUSTOM_MODELS[ type ].model or type == "Tree" and LOOT_MODELS.TREES[ random( maxn( LOOT_MODELS.TREES ) ) ] or LOOT_MODELS.ROCKS[ random( maxn( LOOT_MODELS.ROCKS ) ) ], x, y, z );
+			local element = Object( find( type, "Barrel" ) and MODELS_LIST[ type ].model or type == "Tree" and LOOT_MODELS.TREES[ random( maxn( LOOT_MODELS.TREES ) ) ] or LOOT_MODELS.ROCKS[ random( maxn( LOOT_MODELS.ROCKS ) ) ], x, y, z );
 			element:setData( "loot > life", 100 );
 			element:setData( "loot > name", type );
 			element:setData( "loot > type", "dispenser" );
@@ -56,7 +56,7 @@ function Loot.generate( )
 	for k, v in pairs( LOOT_POSITIONS.BARRELS ) do
 
 		local type = random( maxn( Loot.barrels_type ) );
-		local element = Object( CUSTOM_MODELS[ Loot.barrels_type[ type ] ].model, v.x, v.y, v.z );
+		local element = Object( MODELS_LIST[ Loot.barrels_type[ type ] ].model, v.x, v.y, v.z );
 		element:setData( "loot > life", 100 );
 		element:setData( "loot > name", Loot.barrels_type[ type ] );
 		element:setData( "loot > type", "dispenser" );

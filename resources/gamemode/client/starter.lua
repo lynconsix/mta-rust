@@ -11,7 +11,9 @@ addEventHandler( "onClientResourceStart", resourceRoot,
 		
 		Loot.setup( );
 
+		RequestsModel.setup( );
 		Models.replace( );
+
 		Building.setup( );
 		Weapons.setup( );
 
@@ -19,54 +21,35 @@ addEventHandler( "onClientResourceStart", resourceRoot,
 
 		Login.setup( );
 
-		--UI.setup( );
-
 		setTimer( function( )
 
 			if ( localPlayer:getData( "character > logged" ) ) then
 
-				local hunger = localPlayer:getData( "character > hunger" );
-				local thirst = localPlayer:getData( "character > thirst" );
+				local attributes = { "hunger", "thirst" };
 
-				if ( hunger ) then
+				for _, attribute in ipairs( attributes ) do
 
-					local loss = random( 10 ) / 10;
+					local value = localPlayer:getData( "character > " .. attribute );
 
-					if ( hunger - loss >= 0 ) then
+					if ( value ) then
 
-						localPlayer:setData( "character > hunger", hunger - loss );
+						local loss = random( 10 ) / 10;
 
-					else
+						if ( value - loss >= 0 ) then
 
-						if ( hunger > 0 ) then
+							localPlayer:setData( "character > " .. attribute, value - loss );
 
-							localPlayer:setData( "character > hunger", 0 );
+						else
 
-						end
+							if ( value > 0 ) then
 
-						triggerServerEvent( "utils > set_health", localPlayer, localPlayer, localPlayer:getHealth( ) - 0.3 );
+								localPlayer:setData( "character > " .. attribute, 0 );
 
-					end
+							end
 
-				end
-
-				if ( thirst ) then
-
-					local loss = random( 10 ) / 10;
-
-					if ( thirst - loss >= 0 ) then
-
-						localPlayer:setData( "character > thirst", thirst - loss );
-
-					else
-
-						if ( thirst > 0 ) then
-
-							localPlayer:setData( "character > thirst", 0 );
+							triggerServerEvent( "utils > set_health", localPlayer, localPlayer, localPlayer:getHealth( ) - 0.3 );
 
 						end
-
-						triggerServerEvent( "utils > set_health", localPlayer, localPlayer, localPlayer:getHealth( ) - 0.3 );
 
 					end
 

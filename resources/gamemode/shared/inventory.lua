@@ -1,23 +1,21 @@
-INVENTORY_SLOTS = { INVENTORY = { r = 5, c = 6 }, CLOTHES = 6, SIZE = 45 };
+INVENTORY_SLOTS = { INVENTORY = { r = 5, c = 6 }, CLOTHES = 6, SIZE = 60 };
 
 --[[
 
-	-- ITEM TABLE --
+	ITEMS table{ 
 
-	name 			= string,
-	description 	= string,
-	stackable 		= boolean,
-	weapon 			= boolean,
-	ammo_id 		= boolean,
-	food 			= boolean,
-	hunger 			= int,
-	thrist 			= int,
-	wear	 		= boolean,
-	clothes 		= boolean,
-	preview_object 	= { model = int, pos = { float, float, float }, r = { float, float, float }, bone = int },
-	show_ammo 		= boolean,
-	max_ammo 		= int,
-	mta_id 			= int
+		name string, 
+		description string, 
+		stackable boolean, 
+		weapon table{ mta_id, ammo_id int, show_ammo boolean, max_ammo int }, 
+		food boolean, 
+		hunger int, 
+		thrist int, 
+		wear boolean, 
+		clothes { slot_id int, clothe table{ texture string, model string, type int } }, 
+		preview_object table{ model int, pos table{ float, float, float }, r table{ float, float, float }, bone int },
+
+	}
 
 ]]--
 
@@ -46,13 +44,9 @@ ITEMS = {
 
 		name 			= "AK-47",
 		description 	= "Weapon",
-		weapon 			= true,
-		ammo_id 		= 4,
+		weapon 			= { mta_id = 30, ammo_id = 4, show_ammo = true, max_ammo = 30, custom_id = 20001 },
 		wear	 		= true,
-		preview_object 	= { model = 355, pos = { -0.2, -0.15, 0 }, r = { 0, 0, 0 }, bone = 3 },
-		show_ammo 		= true,
-		max_ammo 		= 30,
-		mta_id 			= 30
+		preview_object 	= { model = 355, pos = { -0.2, -0.15, 0 }, r = { 0, 0, 0 }, bone = 3, custom_id = 20001 },
 
 	},
 
@@ -60,6 +54,7 @@ ITEMS = {
 
 		name 		= "5.56 Ammo",
 		description = "Ammo",
+		is_ammo 	= true,
 		stackable 	= true
 
 	},
@@ -68,7 +63,7 @@ ITEMS = {
 
 		name 		= "Blue Shirt",
 		description = "Roupa",
-		clothes 	= { 4 }
+		clothes 	= { slot_id = 4, clothe = { "sixtyniners", "tshirt", 17 } }
 
 	},
 
@@ -76,7 +71,7 @@ ITEMS = {
 
 		name 		= "Green Shirt",
 		description = "Clothe",
-		clothes 	= { 4 }
+		clothes 	= { slot_id = 4, clothe = { "sixtyniners", "tshirt", 16 } }
 
 	},
 
@@ -84,7 +79,7 @@ ITEMS = {
 
 		name 		= "Boot",
 		description = "Clothe",
-		clothes 	= { 6 }
+		clothes 	= { slot_id = 6, clothe = { "sixtyniners", "tshirt", 16 } }
 
 	},
 
@@ -92,7 +87,7 @@ ITEMS = {
 
 		name 		= "Balaclava",
 		description = "Clothe",
-		clothes 	= { 2 }
+		clothes 	= { slot_id = 2, clothe = { "sixtyniners", "tshirt", 16 } }
 
 	},
 
@@ -101,7 +96,7 @@ ITEMS = {
 		name 		= "Armor",
 		description = "Protection",
 		wear 		= true,
-		clothes 	= { 3 }
+		clothes 	= { slot_id = 3, clothe = { "sixtyniners", "tshirt", 16 } }
 
 	},
 
@@ -109,7 +104,7 @@ ITEMS = {
 
 		name 		= "Jeans Legs",
 		description = "Clothe",
-		clothes 	= { 5 }
+		clothes 	= { slot_id = 5, clothe = { "sixtyniners", "tshirt", 16 } }
 
 	},
 
@@ -118,7 +113,7 @@ ITEMS = {
 		name 		= "Helmet",
 		description = "Protection",
 		wear 		= true,
-		clothes 	= { 1 }
+		clothes 	= { slot_id = 1, clothe = { "sixtyniners", "tshirt", 16 } }
 
 	},
 
@@ -126,13 +121,9 @@ ITEMS = {
 
 		name 			= "Pistol",
 		description 	= "Weapon",
-		weapon 			= true,
-		ammo_id 		= 13,
+		weapon 			= { mta_id = 22, ammo_id = 13, show_ammo = true, max_ammo = 7 },
 		wear	 		= true,
 		preview_object 	= { model = 348, pos = { 0, 0.2, 0.1 }, r = { 235, 90, 0 }, bone = 4 },
-		show_ammo 		= true,
-		max_ammo 		= 7,
-		mta_id 			= 24
 
 	},
 
@@ -148,7 +139,7 @@ ITEMS = {
 
 		name 		= "Hammer",
 		description = "Up/remove constructions",
-		mta_id 		= 11,
+		-- mta_id 		= 11,
 		stackable 	= true
 
 	},
@@ -158,7 +149,7 @@ ITEMS = {
 		name 		= "Pickaxe",
 		description = "Pickaxe",
 		wear 		= true,
-		mta_id 		= 10
+		-- mta_id 		= 10
 
 	},
 
@@ -167,7 +158,7 @@ ITEMS = {
 		name 		= "Axe",
 		description = "Axe",
 		wear 		= true,
-		mta_id 		= 12
+		-- mta_id 		= 12
 
 	},
 

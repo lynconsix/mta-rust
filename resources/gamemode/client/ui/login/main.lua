@@ -120,8 +120,6 @@ function Login.onLog( )
 	showCursor( false );
 	setCameraTarget( localPlayer );
 
-	--Building.start( 1853 );
-
 	UI.current_panel = false;
 
 	Login.UI.buttons[ 2 ]:setText( "Disconnect" );

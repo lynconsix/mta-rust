@@ -1,6 +1,7 @@
 addEvent( "building > create", true );
 addEvent( "building > add_part", true );
 addEvent( "building > remove_part", true );
+addEvent( "building > destroy", true );
 
 Building = { };
 
@@ -9,16 +10,40 @@ Building.elements = { };
 
 function Building.setup( )
 
-	--exec( "CREATE TABLE IF NOT EXISTS builds ( build TEXT, serial TEXT )" );
+	exec( "CREATE TABLE IF NOT EXISTS builds ( serial TEXT, build LONGTEXT )" );
 
 	addEventHandler( "building > create", root, Building.create );
+	addEventHandler( "building > destroy", root, Building.destroy );
 
 end
 
-addEvent("destroyele",true)
-addEventHandler("destroyele",root,function(ele)Building.takeLife(ele)end);
+function Building.load( )
 
-function Building.create( player, name, model, x, y, z, r )
+	local query = query( "SELECT * FROM builds" );
+	for _, row in ipairs( query ) do
+
+		local builds = fromJSON( row.build );
+		for _, build in pairs( builds ) do
+
+			Building.create( row.serial, build.name, build.model, build.x, build.y, build.z, build.r );
+
+		end
+
+	end
+
+end
+
+function Building.save( )
+
+	for group, build in pairs( Building.builds ) do
+
+		exec( "UPDATE builds SET build = ? WHERE serial = ?", toJSON( Building.builds ), build.owner );
+
+	end
+
+end
+
+function Building.create( serial, name, model, x, y, z, r )
 
 	local group = concat( { x, y, z }, ";" );
 
@@ -30,11 +55,12 @@ function Building.create( player, name, model, x, y, z, r )
 
 	Building.builds[ group ] = {
 
+		model 	= model, 
 		x 		= x,
 		y 		= y,
 		z 		= z,
 		r 		= r,
-		owner 	= player.serial,
+		owner 	= serial,
 		life 	= 100,
 		type 	= "wood",
 		name 	= name
@@ -43,7 +69,7 @@ function Building.create( player, name, model, x, y, z, r )
 
 	local element = createObject( model, x, y, z );
 	element:setRotation( 0, 0, r );
-	element:setData( "building > owner", player.serial );
+	element:setData( "building > owner", serial );
 	element:setData( "building > life", 100 );
 	element:setData( "building > type", "wood" );
 	element:setData( "building > name", name );
